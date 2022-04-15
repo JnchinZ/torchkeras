@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from torchkeras.summary import summary
 from torchkeras.torchtools import EarlyStopping
-from torchkeras.utils import log_to_message, ProgressBar
+from torchkeras.utils import to_device, log_to_message, ProgressBar
 
 __version__ = "2.2.1"
 
@@ -19,9 +19,9 @@ class Model(torch.nn.Module):
         super(Model, self).__init__()
         self.net = net
 
-    def forward(self, x):
+    def forward(self, *x):
         if self.net:
-            return self.net.forward(x)
+            return self.net.forward(*x)
         else:
             raise NotImplementedError
 
@@ -52,11 +52,11 @@ class Model(torch.nn.Module):
         self.train()
         self.optimizer.zero_grad()
         if self.device:
-            features = features.to(self.device)
-            labels = labels.to(self.device)
+            features = to_device(features, self.device)
+            labels = to_device(labels, self.device)
 
         # forward
-        predictions = self.forward(features)
+        predictions = self.forward(*features)
         loss = self.loss_func(predictions, labels)
 
         # evaluate metrics
@@ -79,11 +79,11 @@ class Model(torch.nn.Module):
         self.eval()
 
         if self.device:
-            features = features.to(self.device)
-            labels = labels.to(self.device)
+            features = to_device(features, self.device)
+            labels =  to_device(labels, self.device)
 
         with torch.no_grad():
-            predictions = self.forward(features)
+            predictions = self.forward(*features)
             loss = self.loss_func(predictions, labels)
 
         val_metrics = {"val_loss": loss.item()}
@@ -170,7 +170,7 @@ class Model(torch.nn.Module):
     def predict(self, dl):
         self.eval()
         if self.device:
-            result = torch.cat([self.forward(t[0].to(self.device)) for t in dl])
+            result = torch.cat([self.forward(*to_device(t[0], self.device)) for t in dl])
         else:
-            result = torch.cat([self.forward(t[0]) for t in dl])
+            result = torch.cat([self.forward(*t[0]) for t in dl])
         return result.data

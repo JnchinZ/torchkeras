@@ -10,6 +10,14 @@ import sys
 import numpy as np
 
 
+def to_device(obj, device):
+    if isinstance(obj, torch.Tensor):
+        return obj.to(device)
+    elif isinstance(obj, list) or isinstance(obj, tuple):
+        return [to_device(o, device) for o in obj]
+    else:
+        raise TypeError("'obj' must be an object of type torch.Tensor, list or tuple.")
+
 def log_to_message(log, precision=4):
     fmt = "{0}: {1:." + str(precision) + "f}"
     return "    ".join(fmt.format(k, v) for k, v in log.items())
